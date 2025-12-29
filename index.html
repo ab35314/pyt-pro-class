@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Python 闖關挑戰賽</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary: #6C5CE7;
+            --secondary: #00CEC9;
+            --accent: #FF7675;
+            --text-color: #2D3436;
+            --code-bg: #2d3436;
+            --code-text: #81ecec;
+            --gradient-bg: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        body {
+            font-family: 'Fredoka', 'Noto Sans TC', sans-serif;
+            background: var(--gradient-bg);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow-x: hidden;
+            color: var(--text-color);
+        }
+
+        /* 背景漂浮動畫 */
+        .bg-shape {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            animation: float 10s infinite ease-in-out;
+            z-index: 0;
+        }
+        .shape1 { width: 100px; height: 100px; top: 10%; left: 10%; animation-delay: 0s; }
+        .shape2 { width: 150px; height: 150px; bottom: 20%; right: 10%; animation-delay: 2s; }
+        .shape3 { width: 60px; height: 60px; top: 40%; left: 80%; animation-delay: 4s; }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            width: 100%;
+            max-width: 800px;
+            padding: 40px;
+            border-radius: 25px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.2);
+            position: relative;
+            z-index: 1;
+            backdrop-filter: blur(10px);
+            border: 5px solid rgba(255,255,255,0.5);
+            min-height: 550px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        h1, h2 { color: var(--primary); text-align: center; margin-bottom: 25px; }
+        .hidden { display: none !important; }
+
+        /* 輸入框 */
+        .input-group { margin-bottom: 25px; }
+        .input-group label { display: block; margin-bottom: 10px; font-weight: 700; color: var(--primary); }
+        .input-group input {
+            width: 100%; padding: 15px; border: 3px solid #dfe6e9; border-radius: 15px;
+            font-size: 18px; box-sizing: border-box; font-family: inherit; transition: 0.3s;
+        }
+        .input-group input:focus { border-color: var(--secondary); outline: none; }
+
+        /* 按鈕 */
+        .btn {
+            display: block; width: 100%; padding: 18px; border: none; border-radius: 50px;
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            color: white; font-size: 22px; font-weight: 800; cursor: pointer;
+            transition: 0.3s; margin-top: 20px; box-shadow: 0 8px 15px rgba(108, 92, 231, 0.3);
+        }
+        .btn:hover { transform: translateY(-5px); box-shadow: 0 15px 25px rgba(108, 92, 231, 0.4); }
+        .btn:disabled { background: #b2bec3; cursor: not-allowed; transform: none; box-shadow: none; }
+
+        /* 程式碼區塊樣式 */
+        .code-block {
+            background: var(--code-bg); color: var(--code-text); padding: 15px; border-radius: 10px;
+            font-family: 'Consolas', 'Monaco', monospace; margin: 15px 0; text-align: left;
+            font-size: 16px; line-height: 1.5; border-left: 5px solid var(--accent);
+        }
+
+        /* 題目卡片與動畫 */
+        #quiz-card-container { position: relative; overflow: hidden; min-height: 400px; }
+        
+        .quiz-item {
+            background: #f0f3f7; border-radius: 20px; padding: 25px; margin-bottom: 20px;
+            border-left: 8px solid var(--secondary); animation: slideIn 0.5s ease-out;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(50px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .quiz-question { font-size: 22px; font-weight: 700; margin-bottom: 20px; }
+        .quiz-options { list-style: none; padding: 0; }
+        .quiz-options li {
+            padding: 15px 20px; margin: 12px 0; background: white; border: 3px solid transparent;
+            border-radius: 15px; cursor: pointer; transition: 0.2s; font-size: 18px; font-weight: 600;
+            display: flex; align-items: center; color: #636e72;
+        }
+        .quiz-options li:hover { transform: translateX(10px); border-color: #dfe6e9; }
+        .quiz-options li.selected { background: #e3fcfb; border-color: var(--secondary); color: var(--secondary); }
+        
+        /* 證書 */
+        #certificate-wrapper { display: flex; justify-content: center; margin: 20px 0; }
+        #certificate {
+            width: 700px; height: 500px; background: #fff; padding: 40px; box-sizing: border-box;
+            border: 15px solid var(--primary); border-radius: 20px; text-align: center;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            position: relative;
+        }
+        #certificate h2 { font-size: 50px; color: var(--accent); margin: 0; letter-spacing: 3px; }
+        #certificate .highlight { color: var(--primary); font-size: 32px; border-bottom: 4px dashed var(--secondary); padding: 0 10px; margin: 0 5px; }
+        #certificate .score-badge {
+            background: var(--accent); color: white; width: 120px; height: 120px; border-radius: 50%;
+            display: flex; justify-content: center; align-items: center; font-size: 48px; font-weight: bold;
+            margin: 20px auto; transform: rotate(-10deg); border: 5px solid white; box-shadow: 0 0 0 5px var(--accent);
+        }
+        #certificate .date { position: absolute; bottom: 20px; right: 30px; font-size: 18px; color: #b2bec3; }
+
+        /* 進度條容器調整 */
+        .progress-container { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+        .progress-text { font-weight: bold; color: var(--primary); }
+
+    </style>
+</head>
+<body>
+
+    <div class="bg-shape shape1"></div>
+    <div class="bg-shape shape2"></div>
+    <div class="bg-shape shape3"></div>
+
+    <div class="container">
+        <div id="view-login">
+            <div style="font-size: 60px; text-align: center; margin-bottom: 10px;">🐍</div>
+            <h1>Python 實戰挑戰賽</h1>
+            <p style="text-align: center; color: #636e72; margin-bottom: 30px;">
+                輸入資料開始闖關，測驗結束後成績將自動上傳給老師！
+            </p>
+            <div class="input-group">
+                <label>🏫 班級 (Class)</label>
+                <input type="text" id="input-class" placeholder="例如：101">
+            </div>
+            <div class="input-group">
+                <label>🪑 座號 (Seat No.)</label>
+                <input type="number" id="input-seat" placeholder="例如：05">
+            </div>
+            <div class="input-group">
+                <label>🧑‍🎓 姓名 (Name)</label>
+                <input type="text" id="input-name" placeholder="請輸入真實姓名">
+            </div>
+            <button class="btn" onclick="startExam()">GO! 開始挑戰</button>
+        </div>
+
+        <div id="view-quiz" class="hidden">
+            <div class="progress-container">
+                <div class="progress-text" id="progress-text">Level 1 / 20</div>
+                <div style="background: #dfe6e9; height: 10px; border-radius: 5px; width: 70%; overflow: hidden;">
+                    <div id="progress-bar" style="width: 0%; height: 100%; background: var(--secondary); transition: 0.3s;"></div>
+                </div>
+            </div>
+            
+            <div id="quiz-card-container">
+                </div>
+
+            <button class="btn" id="next-btn" onclick="handleNext()" disabled>請先選擇答案</button>
+        </div>
+
+        <div id="view-result" class="hidden">
+            <div style="font-size: 60px; text-align: center;">🏆</div>
+            <h1>挑戰完成！</h1>
+            <p style="text-align: center; color: #27ae60; margin-bottom: 20px; font-weight: bold;">
+                ✅ 成績已自動傳送給老師
+            </p>
+            
+            <div id="certificate-wrapper">
+                <div id="certificate">
+                    <h2>CERTIFICATE</h2>
+                    <p style="color: #aaa; letter-spacing: 2px;">OF CODE MASTERY</p>
+                    <div style="margin: 30px 0;">
+                        <p style="font-size: 24px; font-weight: bold; color: #555;">恭喜 <span class="highlight" id="cert-class"></span> 班</p>
+                        <p style="font-size: 24px; font-weight: bold; color: #555;"><span class="highlight" id="cert-name"></span> 同學 (<span id="cert-seat"></span>號)</p>
+                    </div>
+                    <p style="font-size: 20px; color: #888;">通過 Python 程式閱讀與邏輯修煉</p>
+                    <div class="score-badge" id="cert-score">0</div>
+                    <div class="date" id="cert-date"></div>
+                </div>
+            </div>
+            
+            <button class="btn" style="background: #00b894;" onclick="downloadCertificate()">📥 下載證書圖片</button>
+            <button class="btn" style="background: #b2bec3; margin-top: 15px;" onclick="location.reload()">🔄 再玩一次</button>
+        </div>
+    </div>
+
+    <iframe name="hidden_iframe" id="hidden_iframe" style="display:none;"></iframe>
+
+<script>
+    // 20 題題庫
+    const questions = [
+        // --- 變數與資料型態 ---
+        { q: "請問下列程式碼執行後，x 的值會印出什麼？<div class='code-block'>x = 10<br>x = 'Python'<br>print(x)</div>", options: ["10", "Python", "Error (錯誤)", "None"], ans: 1 },
+        { q: "執行下列程式碼，印出的型態 `type` 為何？<div class='code-block'>print(type(10 / 2))</div>", options: ["int (整數)", "float (浮點數)", "str (字串)", "bool (布林值)"], ans: 1 },
+        { q: "下列變數命名，哪一個符合 Python 的 PEP 8 規範？", options: ["User_Name", "user_name", "2ndUser", "userName"], ans: 1 },
+
+        // --- 運算子 ---
+        { q: "請問 `print(15 % 4)` 的執行結果為何？", options: ["3.75", "3", "4", "15"], ans: 1 },
+        { q: "請問 `print(2 ** 3)` 的執行結果為何？", options: ["6", "5", "8", "9"], ans: 2 },
+        { q: "請問 `print((5 > 3) and (2 > 10))` 的結果為何？", options: ["True", "False", "Error", "None"], ans: 1 },
+        { q: "字串相加：執行下列程式碼會印出什麼？<div class='code-block'>a = '10'<br>b = '5'<br>print(a + b)</div>", options: ["15", "105", "Error", "10+5"], ans: 1 },
+
+        // --- 字串與 F-String ---
+        { q: "請問 `print(f'{3.14159:.2f}')` 的印出結果為何？", options: ["3.14159", "3.14", "3.15", "3.1"], ans: 1 },
+        { q: "字串切片：`s = 'ABCDE'`，請問 `print(s[1:3])` 會印出？", options: ["AB", "BC", "BCD", "ABC"], ans: 1 },
+        { q: "字串切片：`s = 'ABCDE'`，若要取出字串 `s` 的最後一個字，可以用哪個索引？", options: ["s[-1]", "s[0]", "s[end]", "s[1]"], ans: 0 },
+        { q: "請問 `print(f'{1000:,}')` 的效果是什麼？", options: ["靠左對齊", "加上千分位逗號 (1,000)", "補零 (01000)", "變成浮點數"], ans: 1 },
+
+        // --- 型別轉換 ---
+        { q: "執行下列程式碼，最後的輸出是多少？<div class='code-block'>num_str = '50'<br>print(int(num_str) + 10)</div>", options: ["5010", "60", "Error", "50"], ans: 1 },
+        { q: "關於 `input()` 函數，下列敘述何者正確？", options: ["讀進來的預設是整數 (int)", "讀進來的預設是字串 (str)", "讀進來的預設是浮點數 (float)", "會自動判斷型別"], ans: 1 },
+
+        // --- 條件判斷 ---
+        { q: "請閱讀程式碼，判斷最後會印出什麼？<div class='code-block'>score = 50<br>if score >= 60:<br>&nbsp;&nbsp;print('Pass')<br>else:<br>&nbsp;&nbsp;print('Fail')</div>", options: ["Pass", "Fail", "PassFail", "什麼都不印"], ans: 1 },
+        { q: "請閱讀程式碼，判斷最後會印出什麼？<div class='code-block'>x = 10<br>if x > 20:<br>&nbsp;&nbsp;print('A')<br>elif x > 5:<br>&nbsp;&nbsp;print('B')<br>else:<br>&nbsp;&nbsp;print('C')</div>", options: ["A", "B", "C", "B 和 C"], ans: 1 },
+        { q: "Python 程式中，縮排 (Indentation) 的主要用途是？", options: ["美觀", "定義程式區塊 (Block)", "註解", "沒有用途"], ans: 1 },
+        { q: "請閱讀巢狀判斷，判斷最後印出什麼？<div class='code-block'>age = 25<br>member = True<br><br>if age > 18:<br>&nbsp;&nbsp;if member:<br>&nbsp;&nbsp;&nbsp;&nbsp;print('Discount')<br>&nbsp;&nbsp;else:<br>&nbsp;&nbsp;&nbsp;&nbsp;print('Full Price')</div>", options: ["Discount", "Full Price", "Nothing", "Error"], ans: 0 },
+        { q: "在 `if` 條件式中，要判斷「兩者相等」，應使用哪個符號？", options: ["=", "==", "<>", ":="], ans: 1 },
+        { q: "如果 `if` 和所有的 `elif` 都不成立，程式會執行哪個區塊？", options: ["break", "then", "else", "end"], ans: 2 },
+        { q: "邏輯運算：`(10 == 10) and (5 != 5)` 的結果是？", options: ["True", "False", "10", "5"], ans: 1 }
+    ];
+
+    let userAnswers = new Array(questions.length).fill(null);
+    let currentQuestionIndex = 0;
+    let userInfo = {};
+
+    function startExam() {
+        const cls = document.getElementById('input-class').value;
+        const seat = document.getElementById('input-seat').value;
+        const name = document.getElementById('input-name').value;
+
+        if (!cls || !seat || !name) {
+            alert("⚠️ 請把資料填寫完整，才能開始挑戰喔！");
+            return;
+        }
+
+        userInfo = { cls, seat, name };
+        document.getElementById('view-login').classList.add('hidden');
+        document.getElementById('view-quiz').classList.remove('hidden');
+        showQuestion(0);
+    }
+
+    function showQuestion(index) {
+        currentQuestionIndex = index;
+        const container = document.getElementById('quiz-card-container');
+        const q = questions[index];
+        
+        document.getElementById('progress-text').innerText = `Level ${index + 1} / ${questions.length}`;
+        document.getElementById('progress-bar').style.width = ((index) / questions.length * 100) + "%";
+
+        const nextBtn = document.getElementById('next-btn');
+        nextBtn.disabled = true;
+        nextBtn.innerText = (index === questions.length - 1) ? "提交試卷 ✅" : "請先選擇答案";
+        nextBtn.style.background = ""; 
+
+        let optionsHtml = "";
+        q.options.forEach((opt, optIndex) => {
+            const isSelected = userAnswers[index] === optIndex ? "selected" : "";
+            optionsHtml += `<li class="${isSelected}" onclick="selectOption(${index}, ${optIndex}, this)">${opt}</li>`;
+        });
+
+        container.innerHTML = `
+            <div class="quiz-item">
+                <div class="quiz-question">Q${index+1}. ${q.q}</div>
+                <ul class="quiz-options" id="current-options">${optionsHtml}</ul>
+            </div>
+        `;
+    }
+
+    function selectOption(qIndex, optIndex, element) {
+        userAnswers[qIndex] = optIndex;
+        const parent = document.getElementById('current-options');
+        Array.from(parent.children).forEach(li => li.classList.remove('selected'));
+        element.classList.add('selected');
+        const nextBtn = document.getElementById('next-btn');
+        nextBtn.disabled = false;
+        
+        if (qIndex === questions.length - 1) {
+            nextBtn.innerText = "提交試卷 ✅";
+            nextBtn.style.background = "#27ae60"; 
+        } else {
+            nextBtn.innerText = "下一題 ➔";
+            nextBtn.style.background = "linear-gradient(45deg, var(--primary), var(--secondary))";
+        }
+    }
+
+    function handleNext() {
+        if (currentQuestionIndex < questions.length - 1) {
+            showQuestion(currentQuestionIndex + 1);
+        } else {
+            submitExam();
+        }
+    }
+
+    // ★★★ 核心邏輯修改區：提交即上傳 ★★★
+    function submitExam() {
+        if(!confirm("確定要交卷嗎？")) return;
+
+        // 1. 計算分數
+        let score = 0;
+        userAnswers.forEach((ans, idx) => {
+            if (ans === questions[idx].ans) score += 5;
+        });
+
+        // 2. 背景自動上傳到 Google Form
+        sendScoreToGoogle(score);
+
+        // 3. 顯示結果頁面 (不需等待上傳完成，讓體驗更流暢)
+        showResult(score);
+    }
+
+    // 背景發送功能 (利用 Hidden Iframe 避開跳轉)
+    function sendScoreToGoogle(score) {
+        const formActionURL = "https://docs.google.com/forms/d/e/1FAIpQLSex9gg61keGkG83QVvLvRnuAWYnNdA588bSEAVFKuFJPcZBRw/formResponse";
+        
+        // 建立一個隱藏的 Form 元素
+        const form = document.createElement("form");
+        form.action = formActionURL;
+        form.method = "POST";
+        form.target = "hidden_iframe"; // 重點：將結果導向隱藏的 iframe
+        form.style.display = "none";
+
+        // 對應欄位資料
+        const fields = {
+            "entry.1029166618": userInfo.cls,  // 班級
+            "entry.902856373": userInfo.seat,  // 座號
+            "entry.717887958": userInfo.name,  // 姓名
+            "entry.201845615": score           // 分數
+        };
+
+        for (const key in fields) {
+            const input = document.createElement("input");
+            input.type = "hidden";
+            input.name = key;
+            input.value = fields[key];
+            form.appendChild(input);
+        }
+
+        document.body.appendChild(form);
+        form.submit(); // 執行提交
+        
+        // 稍後移除 form 保持乾淨
+        setTimeout(() => { document.body.removeChild(form); }, 1000);
+    }
+
+    function showResult(score) {
+        document.getElementById('view-quiz').classList.add('hidden');
+        document.getElementById('view-result').classList.remove('hidden');
+
+        document.getElementById('cert-class').innerText = userInfo.cls;
+        document.getElementById('cert-seat').innerText = userInfo.seat;
+        document.getElementById('cert-name').innerText = userInfo.name;
+        document.getElementById('cert-score').innerText = score;
+        
+        const now = new Date();
+        document.getElementById('cert-date').innerText = `${now.getFullYear()}.${now.getMonth()+1}.${now.getDate()}`;
+    }
+
+    function downloadCertificate() {
+        const cert = document.getElementById('certificate');
+        const originalTransform = cert.style.transform;
+        cert.style.transform = "none";
+        
+        html2canvas(cert, { scale: 2, backgroundColor: null }).then(canvas => {
+            const link = document.createElement('a');
+            link.download = `Python挑戰狀_${userInfo.name}.png`;
+            link.href = canvas.toDataURL("image/png");
+            link.click();
+            cert.style.transform = originalTransform;
+        });
+    }
+</script>
+
+</body>
+</html>
