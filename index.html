@@ -1,204 +1,239 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>雲端共享投票系統</title>
+    <title>進階防護投票箱</title>
     <style>
-        /* CSS：美化網頁外觀 */
+        :root {
+            --primary: #4a90e2;
+            --agree: #2ecc71;
+            --disagree: #e74c3c;
+            --bg: #f4f7f6;
+        }
         body {
-            font-family: "Microsoft JhengHei", sans-serif;
+            font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif;
+            background-color: var(--bg);
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
+            min-height: 100vh;
             margin: 0;
-            background-color: #f0f2f5;
         }
-
-        .vote-card {
+        .container {
             background: white;
-            padding: 30px;
+            padding: 2rem;
             border-radius: 15px;
             box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-            text-align: center;
-            width: 380px;
-        }
-
-        h2 { color: #333; margin-bottom: 5px; }
-        p.subtitle { color: #666; font-size: 14px; margin-bottom: 25px; }
-
-        /* 結果顯示區域 */
-        .results {
-            background: #f8f9fa;
-            border-radius: 10px;
-            padding: 20px;
-            margin-bottom: 20px;
-            text-align: left;
-            display: none; /* 點擊後顯示 */
-        }
-
-        .result-label {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 5px;
-            font-weight: bold;
-        }
-
-        .progress-bg {
-            background-color: #e9ecef;
-            border-radius: 10px;
-            height: 12px;
             width: 100%;
-            margin-bottom: 15px;
-            overflow: hidden;
+            max-width: 450px;
+            text-align: center;
         }
-
-        .progress-fill {
-            height: 100%;
-            width: 0%;
-            transition: width 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-
-        .bg-agree { background-color: #2ecc71; }
-        .bg-disagree { background-color: #e74c3c; }
-
-        /* 按鈕群組 */
-        .button-grid {
+        h2 { color: #333; margin-bottom: 0.5rem; }
+        #session-tag { font-size: 12px; color: #aaa; margin-bottom: 1.5rem; display: block; }
+        
+        .btn-group {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 12px;
+            gap: 10px;
+            margin-bottom: 20px;
         }
-
-        .btn {
+        button {
             padding: 12px;
             border: none;
             border-radius: 8px;
+            cursor: pointer;
             font-size: 16px;
             font-weight: bold;
-            cursor: pointer;
-            transition: 0.2s;
-            color: white;
+            transition: all 0.2s;
         }
-
-        .btn:active { transform: scale(0.95); }
-        .btn:disabled { background-color: #ccc; cursor: not-allowed; }
-
-        .btn-agree { background-color: #2ecc71; }
-        .btn-disagree { background-color: #e74c3c; }
-        .btn-show { background-color: #3498db; }
-        .btn-reset { background-color: #95a5a6; }
-
-        .full-width { grid-column: span 2; }
+        button:disabled { background-color: #ddd !important; cursor: not-allowed; opacity: 0.7; }
+        button:active:not(:disabled) { transform: scale(0.95); }
         
-        #msg { margin-top: 15px; font-size: 13px; color: #888; }
+        .btn-agree { background-color: var(--agree); color: white; }
+        .btn-disagree { background-color: var(--disagree); color: white; }
+        .btn-result { background-color: var(--primary); color: white; grid-column: span 2; }
+        .btn-reset { background-color: #34495e; color: white; grid-column: span 2; margin-top: 10px; font-size: 13px; }
+        
+        #message { height: 24px; color: #e67e22; margin-bottom: 15px; font-weight: bold; }
+
+        .results-section {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+            text-align: left;
+            display: none;
+        }
+        .progress-container { margin-bottom: 15px; }
+        .label-group { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 14px; }
+        .progress-bg { background: #eee; height: 20px; border-radius: 10px; overflow: hidden; }
+        .progress-fill { height: 100%; width: 0%; transition: width 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        #fill-agree { background: var(--agree); }
+        #fill-disagree { background: var(--disagree); }
     </style>
 </head>
 <body>
 
-    <div class="vote-card">
-        <h2>即時表決系統</h2>
-        <p class="subtitle">數據將即時同步至雲端資料庫</p>
-
-        <!-- 視覺化圖表區 -->
-        <div id="result-area" class="results">
-            <div class="result-label">
-                <span>✅ 同意</span>
-                <span id="label-agree">0%</span>
-            </div>
-            <div class="progress-bg">
-                <div id="bar-agree" class="progress-fill bg-agree"></div>
-            </div>
-
-            <div class="result-label">
-                <span>❌ 不同意</span>
-                <span id="label-disagree">0%</span>
-            </div>
-            <div class="progress-bg">
-                <div id="bar-disagree" class="progress-fill bg-disagree"></div>
-            </div>
-        </div>
-
-        <!-- 功能按鈕區 -->
-        <div class="button-grid">
-            <button id="btn-agree" class="btn btn-agree" onclick="castVote('同意')">同意</button>
-            <button id="btn-disagree" class="btn btn-disagree" onclick="castVote('不同意')">不同意</button>
-            <button class="btn btn-show full-width" onclick="toggleDisplay()">檢視/更新統計結果</button>
-            <button class="btn btn-reset full-width" onclick="resetLocal()">重製票箱 (僅限本機)</button>
-        </div>
-
-        <div id="msg">尚未投票</div>
+<div class="container">
+    <h2>🗳️ 線上投票箱</h2>
+    <span id="session-tag">載入中...</span>
+    <div id="message"></div>
+    
+    <div class="btn-group">
+        <button id="vote-agree" class="btn-agree" onclick="vote('agree')">【同意】</button>
+        <button id="vote-disagree" class="btn-disagree" onclick="vote('disagree')">【不同意】</button>
+        <button class="btn-result" onclick="toggleResults()">【觀看結果】</button>
+        <button class="btn-reset" onclick="resetWithPassword()">🔒 重製票箱 (管理員)</button>
     </div>
 
-    <!-- 隱藏的 iframe 用於提交 Google 表單而不跳轉頁面 -->
-    <iframe name="hidden_iframe" id="hidden_iframe" style="display:none;"></iframe>
+    <div id="results" class="results-section">
+        <div class="progress-container">
+            <div class="label-group">
+                <span>同意</span>
+                <span id="text-agree">0% (0票)</span>
+            </div>
+            <div class="progress-bg"><div id="fill-agree" class="progress-fill"></div></div>
+        </div>
+        <div class="progress-container">
+            <div class="label-group">
+                <span>不同意</span>
+                <span id="text-disagree">0% (0票)</span>
+            </div>
+            <div class="progress-bg"><div id="fill-disagree" class="progress-fill"></div></div>
+        </div>
+    </div>
+</div>
 
-    <script>
-        // 配置資訊
-        const FORM_ID = "1NoXPV12EXLOsfg-QNBMKRcs7BUlQmi3geGCn-IWzqDQ";
-        const ENTRY_ID = "entry.1237221277";
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { 
+        getFirestore, doc, setDoc, updateDoc, onSnapshot, 
+        collection, addDoc, getDoc, increment 
+    } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // 初始化資料 (嘗試從本機讀取舊資料)
-        let votes = JSON.parse(localStorage.getItem('vote_backup')) || { agree: 0, disagree: 0 };
+    const firebaseConfig = {
+        apiKey: "AIzaSyDinZYLn1DdRMjJ7IYTOcUu3eSkQfx85Ro",
+        authDomain: "vote-f8cee.firebaseapp.com",
+        projectId: "vote-f8cee",
+        storageBucket: "vote-f8cee.firebasestorage.app",
+        messagingSenderId: "43077914657",
+        appId: "1:43077914657:web:2e7baaca453ea5bc26d360"
+    };
 
-        // 頁面載入時先更新一次
-        updateUI();
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
 
-        function castVote(choice) {
-            // 1. 本地邏輯更新
-            if (choice === '同意') votes.agree++;
-            else votes.disagree++;
-            
-            localStorage.setItem('vote_backup', JSON.stringify(votes));
-            updateUI();
+    let currentSessionId = "";
+    let unsubscribe = null;
 
-            // 2. 偷偷送出到 Google 表單
-            const actionUrl = `https://docs.google.com/forms/d/e/${FORM_ID}/formResponse`;
-            const submitUrl = `${actionUrl}?${ENTRY_ID}=${encodeURIComponent(choice)}&submit=Submit`;
-            
-            // 透過 iframe 送出，頁面不會閃動
-            document.getElementById('hidden_iframe').src = submitUrl;
+    // 1. 初始化並檢查 LocalStorage
+    const initApp = async () => {
+        const configRef = doc(db, "votes", "config");
+        const configSnap = await getDoc(configRef);
 
-            // 3. UI 反饋
-            alert(`投票成功！您選擇了：${choice}`);
-            document.getElementById('btn-agree').disabled = true;
-            document.getElementById('btn-disagree').disabled = true;
-            document.getElementById('msg').innerText = "您已完成雲端投票同步";
+        if (configSnap.exists()) {
+            currentSessionId = configSnap.data().currentId;
+            document.getElementById('session-tag').innerText = `目前輪次: ${currentSessionId}`;
+            checkVotedStatus();
+            listenToVotes();
+        } else {
+            // 初始化資料庫 (預設密碼 1234)
+            await setDoc(configRef, { currentId: "init", adminPassword: "1234" });
+            await resetBox(true);
         }
+    };
 
-        function toggleDisplay() {
-            const area = document.getElementById('result-area');
-            if (area.style.display === 'block') {
-                area.style.display = 'none';
-            } else {
-                area.style.display = 'block';
-                updateUI();
-                // 提供查看雲端總表的連結
-                if(confirm("想去 Google 表單查看雲端所有人的統計總結嗎？")) {
-                    window.open(`https://docs.google.com/forms/d/e/${FORM_ID}/viewanalytics`);
-                }
+    // 檢查是否投過票
+    function checkVotedStatus() {
+        const hasVoted = localStorage.getItem(`voted_${currentSessionId}`);
+        if (hasVoted) {
+            disableVoteButtons("您在此輪已投票囉！");
+        }
+    }
+
+    function disableVoteButtons(msg) {
+        document.getElementById('vote-agree').disabled = true;
+        document.getElementById('vote-disagree').disabled = true;
+        showMessage(msg);
+    }
+
+    // 2. 投票功能
+    window.vote = async function(type) {
+        if (localStorage.getItem(`voted_${currentSessionId}`)) return;
+
+        try {
+            const sessionRef = doc(db, "sessions", currentSessionId);
+            await updateDoc(sessionRef, { [type]: increment(1) });
+            
+            // 寫入 LocalStorage
+            localStorage.setItem(`voted_${currentSessionId}`, "true");
+            disableVoteButtons("✅ 感謝您的參與！");
+        } catch (error) {
+            showMessage("❌ 投票失敗");
+        }
+    };
+
+    // 3. 帶有密碼鎖的重製功能
+    window.resetWithPassword = async function() {
+        const passwordInput = prompt("請輸入管理員密碼以重製票箱：");
+        if (!passwordInput) return;
+
+        const configRef = doc(db, "votes", "config");
+        const configSnap = await getDoc(configRef);
+        const correctPassword = configSnap.data().adminPassword;
+
+        if (passwordInput === correctPassword) {
+            await resetBox();
+        } else {
+            alert("❌ 密碼錯誤，拒絕存取！");
+        }
+    };
+
+    async function resetBox(isFirst = false) {
+        try {
+            const sessionsCol = collection(db, "sessions");
+            const newDocRef = await addDoc(sessionsCol, {
+                agree: 0, disagree: 0, createdAt: new Date()
+            });
+
+            await updateDoc(doc(db, "votes", "config"), {
+                currentId: newDocRef.id
+            });
+
+            if(!isFirst) window.location.reload(); // 重製後重新載入以清空狀態
+        } catch (e) { console.error(e); }
+    }
+
+    // 4. 即時監聽
+    function listenToVotes() {
+        if (unsubscribe) unsubscribe();
+        unsubscribe = onSnapshot(doc(db, "sessions", currentSessionId), (docSnap) => {
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                const agree = data.agree || 0;
+                const disagree = data.disagree || 0;
+                const total = agree + disagree;
+                const agreePer = total === 0 ? 0 : Math.round((agree / total) * 100);
+                const disagreePer = total === 0 ? 0 : 100 - agreePer;
+
+                document.getElementById('fill-agree').style.width = agreePer + '%';
+                document.getElementById('text-agree').innerText = `${agreePer}% (${agree}票)`;
+                document.getElementById('fill-disagree').style.width = disagreePer + '%';
+                document.getElementById('text-disagree').innerText = `${disagreePer}% (${disagree}票)`;
             }
-        }
+        });
+    }
 
-        function updateUI() {
-            const total = votes.agree + votes.disagree;
-            const aP = total === 0 ? 0 : Math.round((votes.agree / total) * 100);
-            const dP = total === 0 ? 0 : Math.round((votes.disagree / total) * 100);
+    window.toggleResults = function() {
+        const resDiv = document.getElementById('results');
+        resDiv.style.display = (resDiv.style.display === 'none') ? 'block' : 'none';
+    };
 
-            document.getElementById('label-agree').innerText = `${aP}% (${votes.agree}票)`;
-            document.getElementById('label-disagree').innerText = `${dP}% (${votes.disagree}票)`;
-            
-            document.getElementById('bar-agree').style.width = aP + "%";
-            document.getElementById('bar-disagree').style.width = dP + "%";
-        }
+    function showMessage(txt) {
+        document.getElementById('message').innerText = txt;
+    }
 
-        function resetLocal() {
-            if (confirm("這只會清空您目前瀏覽器上的顯示紀錄，雲端數據不會被刪除。確定嗎？")) {
-                votes = { agree: 0, disagree: 0 };
-                localStorage.removeItem('vote_backup');
-                location.reload();
-            }
-        }
-    </script>
+    initApp();
+</script>
 </body>
 </html>
